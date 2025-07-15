@@ -130,7 +130,6 @@ class Application(QApplication):
             self.firewall_manager.disable_block()
 
     def handle_packet(self, packet_data):
-        print(f"Received packet_data in main.py: {packet_data}") # Debug print
         connection_key = f"{packet_data['dst_ip']}:{packet_data['dst_port']}:{packet_data['interface']}"
 
         if connection_key not in self.connections:

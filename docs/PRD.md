@@ -15,31 +15,37 @@ This document outlines the product requirements for a GUI application that monit
 
 ### 3.1. Traffic Monitoring
 
-*   Capture all outbound network packets from the host machine.
-*   Record the destination IP address, port, and the volume of data sent.
+*   Capture all outbound network packets from the host machine, across multiple network interfaces (VPN and LAN).
+*   Record the destination IP address, port, the network interface used, and the volume of data sent.
 *   Display a real-time view of network connections.
 
-### 3.2. Geolocation
+### 3.2. Internet Blocking
+
+*   Provide a mechanism to block all internet-bound traffic while maintaining local network connectivity.
+
+### 3.3. Geolocation
 
 *   Use a geolocation database to map destination IP addresses to countries and cities.
-*   Display traffic destinations on a world map.
+*   Display traffic destinations on a world map, with interactive panning.
 
-### 3.3. Domain and Provider Resolution
+### 3.4. Domain and Provider Resolution
 
 *   Perform reverse DNS lookups to identify the domain names associated with destination IP addresses.
 *   Identify the network provider (ASN) for each destination IP address.
 
-### 3.4. Data Visualization
+### 3.5. Data Visualization
 
 *   Display a summary of network traffic, including total data volume and the number of connections.
-*   Provide a searchable and sortable list of all network connections.
+*   Provide a searchable and sortable list of all network connections, with continuous filtering capabilities.
 *   Use charts and graphs to visualize data, such as traffic by country or by application.
 
-### 3.5. User Interface
+### 3.6. User Interface
 
 *   A clean and intuitive graphical user interface (GUI).
 *   A main dashboard displaying key information at a glance.
 *   Detailed views for exploring specific connections and data points.
+*   Visually distinguish non-VPN traffic (e.g., using different text color).
+*   Provide filter help through a dedicated menu option.
 
 ## 4. Non-Functional Requirements
 

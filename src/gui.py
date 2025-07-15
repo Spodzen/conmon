@@ -3,10 +3,10 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem, 
-    QVBoxLayout, QWidget, QHeaderView, QSplitter, QPushButton, QHBoxLayout, QLabel
+    QVBoxLayout, QWidget, QHeaderView, QSplitter, QPushButton, QHBoxLayout, QLabel, QLineEdit, QMenuBar, QAction, QMessageBox
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import Qt, QUrl, pyqtSignal
 import os
 
@@ -46,6 +46,14 @@ QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
 QSplitter::handle {
     background-color: #555555;
 }
+
+QPushButton {
+    color: white;
+}
+
+QLineEdit {
+    color: white;
+}
 """ # Collapsed for brevity
 
 class MainWindow(QMainWindow):
@@ -55,9 +63,18 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.map_name = "map" # Default map name
+        self._current_filter = None # Stores the active filter
         self.setWindowTitle("Conmon - Network Traffic Monitor")
         self.setGeometry(100, 100, 1200, 800)
         self.setStyleSheet(DARK_STYLESHEET)
+
+        # Menu Bar
+        menubar = self.menuBar()
+        help_menu = menubar.addMenu("&Help")
+
+        filter_help_action = QAction("&Filter Help", self)
+        filter_help_action.triggered.connect(self.show_filter_help)
+        help_menu.addAction(filter_help_action)
 
         main_widget = QWidget()
         main_widget.setStyleSheet(DARK_STYLESHEET)
@@ -70,6 +87,21 @@ class MainWindow(QMainWindow):
         self.firewall_toggle.toggled.connect(self.on_firewall_toggled)
         control_bar.addWidget(self.firewall_toggle)
         control_bar.addStretch(1)
+
+        # Filter input and buttons
+        self.filter_input = QLineEdit()
+        self.filter_input.setPlaceholderText("Filter (e.g., process=chrome.exe, ip=1.2.3.4)")
+        self.filter_input.setFixedWidth(300)
+        control_bar.addWidget(self.filter_input)
+
+        self.apply_filter_button = QPushButton("Apply Filter")
+        self.apply_filter_button.clicked.connect(self.apply_filter)
+        control_bar.addWidget(self.apply_filter_button)
+
+        self.reset_filter_button = QPushButton("Reset Filters")
+        self.reset_filter_button.clicked.connect(self.reset_filters)
+        control_bar.addWidget(self.reset_filter_button)
+
         layout.addLayout(control_bar)
         
         splitter = QSplitter(Qt.Vertical)
@@ -124,6 +156,21 @@ class MainWindow(QMainWindow):
             self.table_widget.setItem(row, 4, volume_item) # Adjusted for new column
             if data.get("process_name") and self.table_widget.item(row, 2).text() == "Unknown":
                  self.table_widget.setItem(row, 2, QTableWidgetItem(data["process_name"]))
+
+            # Update text color for non-VPN traffic
+            if data.get("interface") != 'NordLynx':
+                yellow_color = QColor(255, 255, 0) # RGB for yellow
+                for col in range(self.table_widget.columnCount()):
+                    item = self.table_widget.item(row, col)
+                    if item:
+                        item.setForeground(yellow_color)
+            else:
+                # Reset color to default if it was previously yellow and now is VPN
+                default_color = QColor(77, 255, 77) # From DARK_STYLESHEET
+                for col in range(self.table_widget.columnCount()):
+                    item = self.table_widget.item(row, col)
+                    if item:
+                        item.setForeground(default_color)
         else:
             # --- Add New Row ---
             self.table_widget.setSortingEnabled(False)
@@ -145,6 +192,10 @@ class MainWindow(QMainWindow):
             
             self.table_widget.setItem(row_position, 6, QTableWidgetItem("Resolving...")) # Adjusted for new column
             self.table_widget.setSortingEnabled(True)
+
+        # Apply filter if active
+        if self._current_filter:
+            self._apply_filter_to_row(row if row != -1 else row_position, data)
 
     def update_resolved_info(self, ip, location, network, lat, lon):
         """Updates location and network for all rows with the matching IP."""
@@ -177,3 +228,76 @@ class MainWindow(QMainWindow):
 
     def set_map_name(self, name):
         self.map_name = name
+
+    def apply_filter(self):
+        filter_text = self.filter_input.text().strip()
+        if not filter_text:
+            self.reset_filters()
+            return
+
+        filter_parts = filter_text.split('=', 1)
+        if len(filter_parts) != 2:
+            self.reset_filters()
+            return
+
+        self._current_filter = {
+            "key": filter_parts[0].strip().lower(),
+            "value": filter_parts[1].strip().lower()
+        }
+
+        for row in range(self.table_widget.rowCount()):
+            # Retrieve the original data for the row to apply the filter
+            # This assumes you have a way to get the full row data, e.g., from a model
+            # For now, we'll re-evaluate based on visible items
+            self._apply_filter_to_row(row, None) # Pass None for data, as we'll read from table
+
+    def _apply_filter_to_row(self, row, data=None):
+        """Applies the current filter to a specific row."""
+        if not self._current_filter:
+            self.table_widget.setRowHidden(row, False)
+            return
+
+        filter_key = self._current_filter["key"]
+        filter_value = self._current_filter["value"]
+
+        column_map = {
+            "ip": 0,
+            "port": 1,
+            "process": 2,
+            "interface": 3,
+            "location": 5,
+            "network": 6,
+        }
+
+        col_index = column_map.get(filter_key)
+        if col_index is None:
+            self.table_widget.setRowHidden(row, False)
+            return
+
+        item = self.table_widget.item(row, col_index)
+        if item and filter_value in item.text().lower():
+            self.table_widget.setRowHidden(row, False)
+        else:
+            self.table_widget.setRowHidden(row, True)
+
+    def reset_filters(self):
+        self.filter_input.clear()
+        self._current_filter = None
+        for row in range(self.table_widget.rowCount()):
+            self.table_widget.setRowHidden(row, False)
+
+    def show_filter_help(self):
+        help_message = """
+        Enter filters in the format: `field=value`
+
+        Available fields:
+        - `ip`: Destination IP address
+        - `port`: Destination Port
+        - `process`: Process Name
+        - `interface`: Network Interface (e.g., NordLynx, Ethernet)
+        - `location`: Geographical Location (City, Country)
+        - `network`: Network Provider (ASN Organization)
+
+        Example: `process=chrome.exe` or `interface=NordLynx`
+        """
+        QMessageBox.information(self, "Filter Help", help_message)

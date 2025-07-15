@@ -43,22 +43,39 @@ This document outlines the development plan for the Conmon application. It will 
     -   [x] Add a function to `src/resolver.py` to perform reverse DNS lookups.
     -   [x] Add "Domain Name" column to the GUI table.
 
-## Phase 4: Data Visualization & Features (Future)
+## Phase 4: Data Visualization & Features
 
--   [ ] **4.1: World Map Visualization**
-    -   [ ] Investigate and select a suitable library for displaying a world map.
-    -   [ ] Plot traffic destinations on the map.
+-   [x] **4.1: World Map Visualization**
+    -   [x] Investigate and select a suitable library for displaying a world map.
+    -   [x] Plot traffic destinations on the map.
+    -   [x] Implement interactive map panning on table click.
 -   [ ] **4.2: Add Charts and Graphs**
     -   [ ] Install `matplotlib` or `pyqtgraph`.
     -   [ ] Add charts to visualize data (e.g., pie chart of traffic by country).
--   [ ] **4.3: Implement Search and Filtering**
-    -   [ ] Add a search bar to filter the connection list.
+-   [x] **4.3: Implement Search and Filtering**
+    -   [x] Add a search bar to filter the connection list.
+    -   [x] Implement continuous filtering of the list.
+    -   [x] Add filter help in a dropdown menu.
 
-## Phase 5: Testing and Packaging (Future)
+## Phase 5: Testing and Packaging
 
--   [ ] **5.1: Write Unit Tests**
-    -   [ ] Create a `tests` directory.
-    -   [ ] Write unit tests for the resolver and data aggregation logic.
+-   [x] **5.1: Write Unit Tests**
+    -   [x] Create a `tests` directory.
+    -   [x] Write unit tests for the resolver and data aggregation logic.
 -   [ ] **5.2: Package Application**
     -   [ ] Install `pyinstaller`.
     -   [ ] Create a build script to package the application into a distributable executable.
+
+## Phase 6: Advanced Features
+
+-   [x] **6.1: Internet Blocking with LAN Passthrough**
+    -   [x] Implement firewall rules to block internet traffic while allowing local network access.
+    -   [x] Add a toggle switch in the GUI to enable/disable the internet block.
+-   [x] **6.2: Multi-interface Sniffing**
+    -   [x] Implement sniffing on multiple network interfaces (VPN and LAN).
+    -   [x] Refine LAN interface detection.
+-   [x] **6.3: Display Interface in Table**
+    -   [x] Add an "Interface" column to the GUI table.
+    -   [x] Populate the "Interface" column with the network interface name.
+-   [x] **6.4: Color-code Non-VPN Traffic**
+    -   [x] Display non-VPN traffic in yellow text in the table.

@@ -6,6 +6,10 @@ __pycache__/
 # Virtual Environment
 venv/
 
+# GeoLite2 Databases
+GeoLite2-ASN.mmdb
+GeoLite2-City.mmdb
+
 # Build artifacts
 dist/
 build/
