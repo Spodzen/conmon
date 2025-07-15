@@ -11,7 +11,42 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal
 import os
 
 # (Stylesheet remains the same)
-DARK_STYLESHEET = """...""" # Collapsed for brevity
+DARK_STYLESHEET = """
+QWidget {
+    background-color: #1e1e1e;
+    color: #4dff4d;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 10pt;
+}
+QHeaderView::section {
+    background-color: #333333;
+    color: #4dff4d;
+    padding: 4px;
+    border: 1px solid #555555;
+}
+QTableWidget {
+    gridline-color: #555555;
+    border: 1px solid #555555;
+}
+QTableWidget::item {
+    border-bottom: 1px solid #555555;
+}
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: #333333;
+    border: 1px solid #555555;
+    width: 15px;
+    height: 15px;
+    margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: #555555;
+    min-height: 20px;
+    min-width: 20px;
+}
+QSplitter::handle {
+    background-color: #555555;
+}
+""" # Collapsed for brevity
 
 class MainWindow(QMainWindow):
     location_selected = pyqtSignal(float, float)
@@ -19,6 +54,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.map_name = "map" # Default map name
         self.setWindowTitle("Conmon - Network Traffic Monitor")
         self.setGeometry(100, 100, 1200, 800)
         self.setStyleSheet(DARK_STYLESHEET)
@@ -84,6 +120,7 @@ class MainWindow(QMainWindow):
 
         if row != -1:
             # --- Update Existing Row ---
+            self.table_widget.setItem(row, 3, QTableWidgetItem(data.get("interface", "Unknown"))) # Update Interface column
             self.table_widget.setItem(row, 4, volume_item) # Adjusted for new column
             if data.get("process_name") and self.table_widget.item(row, 2).text() == "Unknown":
                  self.table_widget.setItem(row, 2, QTableWidgetItem(data["process_name"]))
@@ -111,9 +148,12 @@ class MainWindow(QMainWindow):
 
     def update_resolved_info(self, ip, location, network, lat, lon):
         """Updates location and network for all rows with the matching IP."""
+        # This function now needs to iterate through all rows to find matching IPs
+        # as the key is no longer just IP.
         for row in range(self.table_widget.rowCount()):
-            item = self.table_widget.item(row, 0)
-            if item and item.text() == ip:
+            # Get the IP from the first column
+            ip_item = self.table_widget.item(row, 0)
+            if ip_item and ip_item.text() == ip:
                 location_item = QTableWidgetItem(location)
                 location_item.setData(Qt.UserRole, (lat, lon))
                 self.table_widget.setItem(row, 5, location_item) # Adjusted for new column

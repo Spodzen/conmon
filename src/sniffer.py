@@ -62,6 +62,7 @@ class SnifferThread(QThread):
                         "process_name": process_name,
                         "interface": iface_name # Use the passed interface name
                     }
+                    print(f"Emitting packet_data: {packet_data}") # Debug print
                     self.packet_captured.emit(packet_data)
                 except AttributeError:
                     pass # Ignore non-IP/TCP packets

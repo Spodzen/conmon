@@ -9,23 +9,47 @@ import psutil
 import socket
 
 def get_lan_interface():
-    """Attempts to find the primary non-loopback, non-VPN LAN interface."""
+    """Attempts to find the primary non-loopback, non-VPN LAN interface, prioritizing 'Ethernet'."""
     addresses = psutil.net_if_addrs()
     stats = psutil.net_if_stats()
+    
+    potential_interfaces = []
+    ethernet_interface = None
 
     for iface_name, iface_addrs in addresses.items():
+        print(f"Considering interface: {iface_name}")
         if iface_name == 'NordLynx':  # Skip the VPN interface
+            print(f"  Skipping {iface_name}: VPN interface.")
             continue
 
         if iface_name not in stats or not stats[iface_name].isup:
+            print(f"  Skipping {iface_name}: Not up or no stats.")
             continue  # Skip inactive interfaces
 
+        has_ipv4 = False
         for snicaddr in iface_addrs:
             if snicaddr.family == socket.AF_INET:  # Look for IPv4 addresses
+                has_ipv4 = True
                 # Exclude loopback and APIPA addresses
                 if not snicaddr.address.startswith(('127.', '169.254.')):
-                    # This is a potential LAN interface
-                    return iface_name
+                    print(f"  Found potential LAN IPv4 for {iface_name}: {snicaddr.address}")
+                    if iface_name == 'Ethernet':
+                        ethernet_interface = iface_name
+                    else:
+                        potential_interfaces.append(iface_name)
+                    break # Found a valid IPv4, move to next interface
+        
+        if not has_ipv4:
+            print(f"  Skipping {iface_name}: No IPv4 address.")
+
+    if ethernet_interface:
+        print(f"Selected LAN interface: {ethernet_interface} (Prioritized Ethernet)")
+        return ethernet_interface
+    elif potential_interfaces:
+        print(f"Selected LAN interface: {potential_interfaces[0]} (First available)")
+        return potential_interfaces[0]
+    
+    print("No suitable LAN interface found.")
     return None
 
 # Authoritative Dark Theme Stylesheet
@@ -92,7 +116,7 @@ class Application(QApplication):
         lan_iface = get_lan_interface()
         if lan_iface and lan_iface not in interfaces_to_sniff:
             interfaces_to_sniff.append(lan_iface)
-
+        print(f"Interfaces to sniff: {interfaces_to_sniff}") # Debug print
         self.sniffer_thread = SnifferThread(interfaces=interfaces_to_sniff)
         self.sniffer_thread.packet_captured.connect(self.handle_packet)
         self.sniffer_thread.start()
@@ -106,7 +130,8 @@ class Application(QApplication):
             self.firewall_manager.disable_block()
 
     def handle_packet(self, packet_data):
-        connection_key = f"{packet_data['dst_ip']}:{packet_data['dst_port']}"
+        print(f"Received packet_data in main.py: {packet_data}") # Debug print
+        connection_key = f"{packet_data['dst_ip']}:{packet_data['dst_port']}:{packet_data['interface']}"
 
         if connection_key not in self.connections:
             self.connections[connection_key] = {
@@ -114,6 +139,7 @@ class Application(QApplication):
                 "dst_port": packet_data['dst_port'],
                 "volume": 0,
                 "process_name": packet_data["process_name"],
+                "interface": packet_data["interface"],
             }
             self.resolver_thread.resolve(packet_data['dst_ip'])
         
