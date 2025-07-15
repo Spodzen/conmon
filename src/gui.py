@@ -44,15 +44,15 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.web_view)
 
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(6)
+        self.table_widget.setColumnCount(7)
         self.table_widget.setHorizontalHeaderLabels([
-            "Destination IP", "Port", "Process Name", "Data Volume (Bytes)", "Location", "Network Provider",
+            "Destination IP", "Port", "Process Name", "Interface", "Data Volume (Bytes)", "Location", "Network Provider",
         ])
         font = QFont('Segoe UI', 10)
         self.table_widget.setFont(font)
         header = self.table_widget.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QHeaderView.Stretch)
+        header.setSectionResizeMode(6, QHeaderView.Stretch) # Adjusted for new column
         self.table_widget.setSortingEnabled(True)
         self.table_widget.sortByColumn(3, Qt.DescendingOrder)
         self.table_widget.cellClicked.connect(self.on_cell_clicked)
@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
 
         if row != -1:
             # --- Update Existing Row ---
-            self.table_widget.setItem(row, 3, volume_item)
+            self.table_widget.setItem(row, 4, volume_item) # Adjusted for new column
             if data.get("process_name") and self.table_widget.item(row, 2).text() == "Unknown":
                  self.table_widget.setItem(row, 2, QTableWidgetItem(data["process_name"]))
         else:
@@ -99,13 +99,14 @@ class MainWindow(QMainWindow):
             self.table_widget.setItem(row_position, 0, ip_item)
             self.table_widget.setItem(row_position, 1, QTableWidgetItem(str(data["dst_port"])))
             self.table_widget.setItem(row_position, 2, QTableWidgetItem(data.get("process_name", "Unknown")))
-            self.table_widget.setItem(row_position, 3, volume_item)
+            self.table_widget.setItem(row_position, 3, QTableWidgetItem(data.get("interface", "Unknown"))) # New Interface column
+            self.table_widget.setItem(row_position, 4, volume_item) # Adjusted for new column
             
             location_item = QTableWidgetItem("Resolving...")
             location_item.setData(Qt.UserRole, None) # Initialize lat/lon data
-            self.table_widget.setItem(row_position, 4, location_item)
+            self.table_widget.setItem(row_position, 5, location_item) # Adjusted for new column
             
-            self.table_widget.setItem(row_position, 5, QTableWidgetItem("Resolving..."))
+            self.table_widget.setItem(row_position, 6, QTableWidgetItem("Resolving...")) # Adjusted for new column
             self.table_widget.setSortingEnabled(True)
 
     def update_resolved_info(self, ip, location, network, lat, lon):
@@ -115,12 +116,12 @@ class MainWindow(QMainWindow):
             if item and item.text() == ip:
                 location_item = QTableWidgetItem(location)
                 location_item.setData(Qt.UserRole, (lat, lon))
-                self.table_widget.setItem(row, 4, location_item)
-                self.table_widget.setItem(row, 5, QTableWidgetItem(network))
+                self.table_widget.setItem(row, 5, location_item) # Adjusted for new column
+                self.table_widget.setItem(row, 6, QTableWidgetItem(network)) # Adjusted for new column
 
     def on_cell_clicked(self, row, column):
         """Handle clicks on the table to pan the map."""
-        location_item = self.table_widget.item(row, 4)
+        location_item = self.table_widget.item(row, 5) # Adjusted for new column
         if location_item:
             lat_lon = location_item.data(Qt.UserRole)
             if lat_lon:
@@ -132,4 +133,7 @@ class MainWindow(QMainWindow):
     def pan_map_to(self, lat, lon):
         """Executes JavaScript to pan the map view."""
         if lat is not None and lon is not None:
-            self.web_view.page().runJavaScript(f"map.setView([{lat}, {lon}], 10);")
+            self.web_view.page().runJavaScript(f"{self.map_name}.setView([{lat}, {lon}], 10);")
+
+    def set_map_name(self, name):
+        self.map_name = name

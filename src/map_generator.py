@@ -16,5 +16,5 @@ class MapGenerator:
 
     def save_map(self):
         """Saves the map to an HTML file."""
-        self.map.get_root().html.add_child(folium.Element("<script>var map = {};</script>".format(self.map.get_name())))
+        self.map.get_root().html.add_child(folium.Element(f"<script>var {self.map.get_name()} = {self.map.get_name()};</script>"))
         self.map.save(self.map_path)
